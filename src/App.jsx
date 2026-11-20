@@ -92,8 +92,7 @@ async function loadData() {
     // Consultar información financiera solo como administrador
     if (perfilActual.rol === 'admin') {
       const { data, error } = await supabase
-        .from('v_rentabilidad_producto')
-        .select('producto_id,costo,rentabilidad');
+  .rpc('consultar_rentabilidad');
 
       if (error) throw error;
 
