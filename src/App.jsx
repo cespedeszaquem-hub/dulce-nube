@@ -3,6 +3,44 @@ import { supabase, ready } from './supabase'
 import { IceCreamCone, Carrot, ShoppingCart, House, LogOut, Plus, Pencil, Trash2, Menu, X, RefreshCw } from 'lucide-react'
 const money = n => new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0}).format(Number(n||0))
 
+function CatalogoPublico() {
+  const [productos, setProductos] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    supabase
+      .from('productos')
+      .select('id,nombre,precio_publico,tipo,vaso,volumen_onzas')
+      .order('nombre')
+      .then(({ data, error }) => {
+        if (error) {
+          setError('No se pudo cargar el catálogo.');
+        } else {
+          setProductos(data || []);
+        }
+      });
+  }, []);
+
+  return (
+    <section className="panel">
+      <h2>🍦 Catálogo Dulce Nube</h2>
+      <p>Conoce nuestros deliciosos productos.</p>
+
+      {error && <p className="error">{error}</p>}
+
+      <div className="productgrid">
+        {productos.map(p => (
+          <article className="product" key={p.id}>
+            <h3>{p.nombre}</h3>
+            <b>{money(p.precio_publico)}</b>
+            <p>{p.tipo}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function App(){
  const [session,setSession]=useState(null),[profile,setProfile]=useState(null),[tab,setTab]=useState('inicio'),[menu,setMenu]=useState(false)
  const [products,setProducts]=useState([]),[ingredients,setIngredients]=useState([]),[sales,setSales]=useState([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false)
@@ -120,7 +158,47 @@ async function loadData() {
   }
 }
  if(!ready)return <div className="center"><section className="login"><div className="cloud">☁</div><h1>Dulce Nube</h1><p>Primero conecta Supabase.</p><ol><li>Copia el archivo <b>.env.example</b> y renómbralo a <b>.env</b>.</li><li>En Supabase abre <b>Project Settings → API</b>.</li><li>Pega Project URL y la clave pública anon/publishable en el archivo .env.</li><li>No uses la clave service_role.</li></ol></section></div>
- if(!session)return <div className="center"><form className="login" onSubmit={login}><div className="cloud">☁</div><h1>Dulce Nube</h1><p>Inicia sesión para continuar</p><label>Correo<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Contraseña<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="primary wide">Iniciar sesión</button>{message&&<p className="error">{message}</p>}</form></div>
+ 
+if (!session) return (
+  <div style={{ padding: '30px', maxWidth: '1100px', margin: 'auto' }}>
+    <div className="center">
+      <form className="login" onSubmit={login}>
+        <div className="cloud">☁</div>
+        <h1>Dulce Nube</h1>
+        <p>Inicia sesión para continuar</p>
+
+        <label>
+          Correo
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            required
+          />
+        </label>
+
+        <label>
+          Contraseña
+          <input
+            type="password"
+            value={password}
+            onChange={e => setPassword(e.target.value)}
+            required
+          />
+        </label>
+
+        <button className="primary wide">
+          Iniciar sesión
+        </button>
+
+        {message && <p className="error">{message}</p>}
+      </form>
+    </div>
+
+    <CatalogoPublico />
+  </div>
+);
+
  const admin = profile?.rol === 'admin';
 const empleado = profile?.rol === 'empleado';
 const cliente = profile?.rol === 'cliente';
