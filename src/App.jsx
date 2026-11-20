@@ -55,7 +55,44 @@ export default function App(){
  async function removeIngredient(id){if(!confirm('¿Eliminar este ingrediente?'))return;const {error}=await supabase.from('ingredientes').delete().eq('id',id);setMessage(error?.message||'Ingrediente eliminado.');if(!error)loadData()}
  async function saveProduct(e){e.preventDefault();const payload={nombre:product.nombre.trim(),precio_publico:Number(product.precio_publico||0),tipo:product.tipo||null,vaso:product.vaso||null,volumen_onzas:Number(product.volumen_onzas||0)};const q=editProd?supabase.from('productos').update(payload).eq('id',editProd):supabase.from('productos').insert(payload);const {error}=await q;if(error)return setMessage(error.message);setProduct({nombre:'',precio_publico:'',tipo:'',vaso:'',volumen_onzas:''});setEditProd(null);setMessage('Producto guardado.');loadData()}
  async function removeProduct(id){if(!confirm('¿Eliminar este producto?'))return;const {error}=await supabase.from('productos').delete().eq('id',id);setMessage(error?.message||'Producto eliminado.');if(!error)loadData()}
- async function registerSale(e){e.preventDefault();const p=products.find(x=>String(x.id)===String(sale.producto));if(!p)return setMessage('Selecciona un producto.');const qty=Math.max(1,Number(sale.cantidad||1));const {error}=await supabase.from('ventas').insert({producto:p.nombre,user_id:session.user.id,fecha:new Date().toISOString(),cantidad:qty,total:Number(p.precio_publico||0)*qty});if(error)return setMessage('No se pudo registrar: '+error.message);setSale({producto:'',cantidad:1});setMessage('Venta registrada.');loadData()}
+ async function registerSale(e) {
+  e.preventDefault();
+
+  const p = products.find(
+    x => String(x.id) === String(sale.producto)
+  );
+
+  if (!p) {
+    setMessage('Selecciona un producto.');
+    return;
+  }
+
+  const qty = Number(sale.cantidad);
+
+  if (!Number.isInteger(qty) || qty < 1) {
+    setMessage('Introduce una cantidad válida.');
+    return;
+  }
+
+  setBusy(true);
+
+  try {
+    const { error } = await supabase.rpc('registrar_venta', {
+      p_producto_id: p.id,
+      p_cantidad: qty
+    });
+
+    if (error) throw error;
+
+    setSale({ producto: '', cantidad: 1 });
+    await loadData();
+    setMessage('✅ Venta registrada e inventario actualizado.');
+  } catch (error) {
+    setMessage('No se pudo registrar la venta: ' + error.message);
+  } finally {
+    setBusy(false);
+  }
+}
  if(!ready)return <div className="center"><section className="login"><div className="cloud">☁</div><h1>Dulce Nube</h1><p>Primero conecta Supabase.</p><ol><li>Copia el archivo <b>.env.example</b> y renómbralo a <b>.env</b>.</li><li>En Supabase abre <b>Project Settings → API</b>.</li><li>Pega Project URL y la clave pública anon/publishable en el archivo .env.</li><li>No uses la clave service_role.</li></ol></section></div>
  if(!session)return <div className="center"><form className="login" onSubmit={login}><div className="cloud">☁</div><h1>Dulce Nube</h1><p>Inicia sesión para continuar</p><label>Correo<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Contraseña<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button className="primary wide">Iniciar sesión</button>{message&&<p className="error">{message}</p>}</form></div>
  const admin = profile?.rol === 'admin';
